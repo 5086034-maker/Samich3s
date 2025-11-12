@@ -83,4 +83,4 @@ for chat in st.session_state.history:
     if chat["sender"] == "user":
         st.markdown(f"**You:** {chat['message']}")
     else:
-        st.markdown(f"**{NAME}:** {chat['message']}")3
+        st.markdown(f"**{NAME}:** {chat['message']}")
