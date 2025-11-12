@@ -1,6 +1,8 @@
-# master_control_ai.py
+# master_control_gui.py
 import re
 import random
+import tkinter as tk
+from tkinter import scrolledtext
 
 NAME = "Master Control"
 
@@ -48,15 +50,37 @@ def reply(message):
     cls = classify(message)
     return random.choice(RESPONSES.get(cls, RESPONSES['default']))
 
-def main():
-    print(f"{NAME} initialized. Type 'quit' to terminate.")
-    while True:
-        msg = input("You: ").strip()
-        if msg.lower() in {'quit', 'exit'}:
-            print(f"{NAME}: Shutting down.")
-            break
-        response = reply(msg)
-        print(f"{NAME}: {response}")
+# ----- GUI -----
+def send_message(event=None):
+    user_input = entry.get().strip()
+    if not user_input:
+        return
+    chat_area.config(state='normal')
+    chat_area.insert(tk.END, f"You: {user_input}\n")
+    entry.delete(0, tk.END)
+    
+    if user_input.lower() in {'quit', 'exit'}:
+        chat_area.insert(tk.END, f"{NAME}: Shutting down.\n")
+        root.after(1000, root.destroy)
+        return
+    
+    response = reply(user_input)
+    chat_area.insert(tk.END, f"{NAME}: {response}\n")
+    chat_area.config(state='disabled')
+    chat_area.yview(tk.END)
 
-if __name__ == "__main__":
-    main()
+# Tkinter window
+root = tk.Tk()
+root.title(NAME)
+
+chat_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, state='disabled', width=60, height=20)
+chat_area.pack(padx=10, pady=10)
+
+entry = tk.Entry(root, width=50)
+entry.pack(side=tk.LEFT, padx=(10,0), pady=(0,10))
+entry.bind("<Return>", send_message)
+
+send_btn = tk.Button(root, text="Send", command=send_message)
+send_btn.pack(side=tk.LEFT, padx=10, pady=(0,10))
+
+root.mainloop()
