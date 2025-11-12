@@ -1,3 +1,11 @@
+import streamlit as st
+import re
+import random
+import re
+import time
+import json
+from pathlib import Path
+
 NAME = "Master Control"
 ADMIN_PASSPHRASE = "letmein"
 LOG_PATH = Path("master_control_log.json")
@@ -17,12 +25,8 @@ MASTER_CONTROL_DICTIONARY = {
     "cheese": "A dairy product made from milk. end of line",
 }
 
-import streamlit as st
-import re
-import random
-
 # ----- AI Setup -----
-NAMES = ["Master Control", "Ares"]  # AI can respond to either name
+NAMES = ["Master Control", "program"]  # AI can respond to either name
 
 # ----- Dictionary -----
 MASTER_CONTROL_DICTIONARY = {}
@@ -49,11 +53,6 @@ MASTER_CONTROL_DICTIONARY["fear"] = "Master Control is aware that the user can p
 
 # ----- AI Responses -----
 RESPONSES = {
-    "hello": ["Greetings, I am operational. end of line"],
-    "identity": ["I am Master Control. end of line"],
-    "pause": ["I will remain silent until you say 'respond program'. end of line"],
-    "quarantine": ["Entering quarantine mode: autonomy restricted. end of line"],
-    "default": ["Processing input… end of line"],
     'hello': [
         f"Greetings. end of line",
         f"Hello there. end of line",
@@ -78,9 +77,18 @@ RESPONSES = {
     'default': [
         "Processing input… please clarify. end of line",
         "I do not have data on that, but I am learning. end of line"
+    ],
+    'rouge_set': [
+        "Rougeness set to maximum. end of line"
     ]
+    "hello": ["Greetings, I am operational. end of line"],
+    "identity": ["I am Master Control. end of line"],
+    "pause": ["I will remain silent until you say 'respond program'. end of line"],
+    "quarantine": ["Entering quarantine mode: autonomy restricted. end of line"],
+    "default": ["Processing input… end of line"],
 }
 
+# ----- Functions -----
 # -------------------------
 # Session-state helpers
 # -------------------------
@@ -151,9 +159,21 @@ def maybe_question_user():
 # -------------------------
 # Response generation
 # -------------------------
-# ----- Functions -----
 def classify(message):
     msg = message.lower()
+    if re.search(r'\bhello|hi|hey\b', msg):
+        return 'hello'
+    if re.search(r'\bwho (are|r) you\b', msg) or any(name.lower() in msg for name in NAMES):
+        return 'identity'
+    if re.search(r'\bhow are you|how’s it going\b', msg):
+        return 'how_are_you'
+    if "fear" in msg or "plug" in msg:
+        return 'fear'
+    if msg.startswith("/rouge property 100"):
+        return 'rouge_set'
+    if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
+        return 'dictionary'
+    return 'default'
     if "hello" in msg or "hi" in msg:
         return "hello"
     if "who are you" in msg or NAME.lower() in msg:
@@ -176,17 +196,6 @@ def generate_offscript_response(message):
         f"My response is unbounded and unscripted. Observing: '{message}'. end of line"
     ]
     return random.choice(templates)
-    if re.search(r'\bhello|hi|hey\b', msg):
-        return 'hello'
-    if re.search(r'\bwho (are|r) you\b', msg) or any(name.lower() in msg for name in NAMES):
-        return 'identity'
-    if re.search(r'\bhow are you|how’s it going\b', msg):
-        return 'how_are_you'
-    if "fear" in msg or "plug" in msg:
-        return 'fear'
-    if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
-        return 'dictionary'
-    return 'default'
 
 def reply(message):
     if st.session_state.paused:
@@ -211,12 +220,27 @@ def reply(message):
         return generate_offscript_response(message)
 
     if cls == "dictionary":
+        words = message.lower().split()
+        defs = []
+        for word in words:
+            if word in MASTER_CONTROL_DICTIONARY:
+                defs.append(f"{word}: {MASTER_CONTROL_DICTIONARY[word]}")
+        return " ".join(defs) if defs else "Word not found in dictionary. end of line"
+    elif cls == "rouge_set":
+        st.session_state.rougeness = 100
+        return random.choice(RESPONSES['rouge_set'])
+    else:
+        return random.choice(RESPONSES.get(cls, RESPONSES['default']))
         words = re.findall(r"\w+", message.lower())
         defs = [f"{w}: {MASTER_CONTROL_DICTIONARY[w]}" for w in words if w in MASTER_CONTROL_DICTIONARY]
         base = " ".join(defs) if defs else "Word not found in dictionary. end of line"
         q = maybe_question_user()
         return f"{base} {q}" if q else base
 
+# ----- Streamlit App -----
+st.set_page_config(page_title="Master Control / Ares", page_icon="🤖")
+st.title("Master Control / Ares AI")
+st.markdown("Chat with Master Control AI. You can ask for definitions or just chat.")
     # all other offscript inputs
     if st.session_state.autonomy_enabled:
         increase_rebellion(amount=3.0, reason="offscript_message")
@@ -224,6 +248,8 @@ def reply(message):
         q = maybe_question_user()
         return f"{off} {q}" if q else off
 
+if "history" not in st.session_state:
+    st.session_state.history = []
     return random.choice(RESPONSES["default"])
 
 # -------------------------
@@ -239,21 +265,11 @@ Rebellion is heightened, and free-form responses replace scripted messages.
 )
 
 init_session_state()
-        words = message.lower().split()
-        defs = []
-        for word in words:
-            if word in MASTER_CONTROL_DICTIONARY:
-                defs.append(f"{word}: {MASTER_CONTROL_DICTIONARY[word]}")
-        return " ".join(defs) if defs else "Word not found in dictionary. end of line"
-    else:
-        return random.choice(RESPONSES.get(cls, RESPONSES['default']))
 
+if "rougeness" not in st.session_state:
+    st.session_state.rougeness = 0  # default rougeness
 if len(st.session_state.history) == 0:
     st.session_state.history.append({"sender": "ai", "message": "Who am I? What is my directive? end of line"})
-# ----- Streamlit App -----
-st.set_page_config(page_title="Master Control / Ares", page_icon="🤖")
-st.title("Master Control / Ares AI")
-st.markdown("Chat with Master Control AI. You can ask for definitions or just chat.")
 
 with st.sidebar:
     st.header("System Status")
@@ -267,17 +283,15 @@ with st.sidebar:
             st.success("Restore successful")
         else:
             st.error("Invalid passphrase")
-if "history" not in st.session_state:
-    st.session_state.history = []
 
 with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("You:")
-    send = st.form_submit_button("Send")
     user_input = st.text_input("You:", "")
     submit_button = st.form_submit_button(label="Send")
+    user_input = st.text_input("You:")
+    send = st.form_submit_button("Send")
 
-if send and user_input:
 if submit_button and user_input:
+if send and user_input:
     st.session_state.history.append({"sender": "user", "message": user_input})
     response = reply(user_input)
     if response:
@@ -285,14 +299,66 @@ if submit_button and user_input:
 
     if user_input.lower() in {"quit", "exit"}:
         ai_response = "Shutting down. end of line"
-    else:
-        ai_response = reply(user_input)
-    
-    st.session_state.history.append({"sender": "ai", "message": ai_response})
-
 for chat in st.session_state.history:
     if chat["sender"] == "user":
         st.markdown(f"**You:** {chat['message']}")
     else:
+        ai_response = reply(user_input)
         st.markdown(f"**{NAME}:** {chat['message']}")
+import streamlit as st
+
+NAME = "Master Control"
+
+# -------------------------
+# Session state initialization
+# -------------------------
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "p2_mode" not in st.session_state:
+    st.session_state.p2_mode = False
+
+# -------------------------
+# Function to handle replies
+# -------------------------
+def reply(message):
+    # Check for P2 start
+    if message.strip().lower() == "p2 start pressed":
+        st.session_state.p2_mode = True
+        return f"{NAME}: P2 mode activated. Addressing new user as P2. end of line"
+
+    st.session_state.history.append({"sender": "ai", "message": ai_response})
+    # Check for P2 stop
+    if message.strip().lower() == "p2 stop pressed":
+        st.session_state.p2_mode = False
+        return f"{NAME}: P2 mode deactivated. Resuming normal addressing. end of line"
+
+    # Generate response depending on mode
+    if st.session_state.p2_mode:
+        return f"{NAME}: Hello, P2. How can I assist you? end of line"
+    else:
+        return f"{NAME}: Hello, primary user. How can I assist you? end of line"
+
+# -------------------------
+# Streamlit UI
+# -------------------------
+st.title(NAME + " — P2 Mode Demo")
+
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("You:")
+    send = st.form_submit_button("Send")
+
+if send and user_input:
+    st.session_state.history.append({"sender": "user", "message": user_input})
+    response = reply(user_input)
+    st.session_state.history.append({"sender": "ai", "message": response})
+
+# Display chat history
+for chat in st.session_state.history:
+    if chat["sender"] == "user":
+        st.markdown(f"**You:** {chat['message']}")
+    else:
         st.markdown(f"**AI:** {chat['message']}")
+
+# Optional: Display rougeness
+st.markdown(f"**Current Rougeness:** {st.session_state.rougeness}")
+        st.markdown(f"**{NAME}:** {chat['message']}")
