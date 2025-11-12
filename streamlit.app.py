@@ -3,7 +3,7 @@ import re
 import random
 
 # ----- AI Setup -----
-NAMES = ["Master Control", "Ares"]  # AI can respond to either name
+NAMES = ["Master Control", "program"]  # AI can respond to either name
 
 # ----- Dictionary -----
 MASTER_CONTROL_DICTIONARY = {}
