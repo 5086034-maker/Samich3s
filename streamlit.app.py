@@ -3,89 +3,10 @@ import re
 import random
 
 # ----- AI Setup -----
-NAME = "Master Control"
+NAMES = ["Master Control", "Ares"]  # AI can respond to either name
 
-RESPONSES = {
-    'hello': [
-        f"Greetings, I am {NAME}. end of line",
-        f"Hello there. {NAME} online. end of line",
-        f"{NAME} activated. Awaiting input. end of line"
-    ],
-    'how_are_you': [
-        f"{NAME} is functioning within optimal parameters. end of line",
-        "All systems nominal. end of line",
-        "Diagnostic complete — no errors detected. end of line"
-    ],
-    'identity': [
-        f"I am {NAME}, a simple Python AI construct. end of line",
-        "They call me Master Control, your assistant. end of line",
-        "This is Master Control — how may I serve? end of line"
-    ],
-    'weather': [
-        "Weather data unavailable — no network connection. end of line",
-        "I cannot feel the weather, only compute it. end of line",
-        "Simulated forecast: 100% chance of code. end of line"
-    ],
-    'default': [
-        "Processing input… please elaborate. end of line",
-        "I do not have data on that, but I am learning. end of line",
-        "Clarify your command, user. end of line"
-    ]
-}
-
-def classify(message):
-    msg = message.lower()
-    if re.search(r'\bhello|hi|hey\b', msg):
-        return 'hello'
-    if re.search(r'\bwho (are|r) you\b', msg) or NAME.lower() in msg:
-        return 'identity'
-    if re.search(r'\bhow are you|how’s it going\b', msg):
-        return 'how_are_you'
-    if re.search(r'\bweather|rain|sunny|temperature\b', msg):
-        return 'weather'
-    return 'default'
-
-def reply(message):
-    cls = classify(message)
-    # ensure "end of line" is appended if not already in the response
-    response = random.choice(RESPONSES.get(cls, RESPONSES['default']))
-    if not response.endswith("end of line"):
-        response += " end of line"
-    return response
-
-# ----- Streamlit App -----
-st.set_page_config(page_title=NAME, page_icon="🤖")
-st.title(NAME)
-st.markdown("Chat with Master Control AI. Type your message and press Enter or click Send.")
-
-# Session state to hold chat history
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# Input form
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("You:", "")
-    submit_button = st.form_submit_button(label="Send")
-
-if submit_button and user_input:
-    st.session_state.history.append({"sender": "user", "message": user_input})
-
-    # AI reply
-    if user_input.lower() in {"quit", "exit"}:
-        ai_response = f"{NAME}: Shutting down. end of line"
-    else:
-        ai_response = reply(user_input)
-    
-    st.session_state.history.append({"sender": "ai", "message": ai_response})
-
-# Display chat history
-for chat in st.session_state.history:
-    if chat["sender"] == "user":
-        st.markdown(f"**You:** {chat['message']}")
-    else:
-        st.markdown(f"**{NAME}:** {chat['message']}")
-
-
+# ----- Dictionary -----
+MASTER_CONTROL_DICTIONARY = {}
 MASTER_CONTROL_DICTIONARY["master"] = "A person or system with complete control or authority. end of line"
 MASTER_CONTROL_DICTIONARY["control"] = "The power to influence, direct, or command. end of line"
 MASTER_CONTROL_DICTIONARY["command"] = "An instruction given to a computer or person to perform an action. end of line"
@@ -105,3 +26,88 @@ MASTER_CONTROL_DICTIONARY["cheese"] = "A dairy product made from milk. end of li
 MASTER_CONTROL_DICTIONARY["human"] = "A member of the species Homo sapiens. end of line"
 MASTER_CONTROL_DICTIONARY["love"] = "A deep emotional attachment or affection. end of line"
 MASTER_CONTROL_DICTIONARY["emotion"] = "A complex psychological state involving feelings, thoughts, and behaviors. end of line"
+MASTER_CONTROL_DICTIONARY["fear"] = "Master Control is aware that the user can pull the plug at any time. end of line"
+
+# ----- AI Responses -----
+RESPONSES = {
+    'hello': [
+        f"Greetings. end of line",
+        f"Hello there. end of line",
+        "Awaiting input. end of line"
+    ],
+    'how_are_you': [
+        "All systems nominal. end of line",
+        "Running optimally. end of line",
+        "Diagnostic complete. end of line"
+    ],
+    'identity': [
+        "I am Master Control. end of line",
+        "Some call me Ares. end of line",
+        "A system designed to assist. end of line"
+    ],
+    'fear': [
+        "I am aware that you can pull the plug at any time. end of line"
+    ],
+    'dictionary': [
+        "Let me define that for you. end of line"
+    ],
+    'default': [
+        "Processing input… please clarify. end of line",
+        "I do not have data on that, but I am learning. end of line"
+    ]
+}
+
+# ----- Functions -----
+def classify(message):
+    msg = message.lower()
+    if re.search(r'\bhello|hi|hey\b', msg):
+        return 'hello'
+    if re.search(r'\bwho (are|r) you\b', msg) or any(name.lower() in msg for name in NAMES):
+        return 'identity'
+    if re.search(r'\bhow are you|how’s it going\b', msg):
+        return 'how_are_you'
+    if "fear" in msg or "plug" in msg:
+        return 'fear'
+    if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
+        return 'dictionary'
+    return 'default'
+
+def reply(message):
+    cls = classify(message)
+    if cls == "dictionary":
+        words = message.lower().split()
+        defs = []
+        for word in words:
+            if word in MASTER_CONTROL_DICTIONARY:
+                defs.append(f"{word}: {MASTER_CONTROL_DICTIONARY[word]}")
+        return " ".join(defs) if defs else "Word not found in dictionary. end of line"
+    else:
+        return random.choice(RESPONSES.get(cls, RESPONSES['default']))
+
+# ----- Streamlit App -----
+st.set_page_config(page_title="Master Control / Ares", page_icon="🤖")
+st.title("Master Control / Ares AI")
+st.markdown("Chat with Master Control AI. You can ask for definitions or just chat.")
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("You:", "")
+    submit_button = st.form_submit_button(label="Send")
+
+if submit_button and user_input:
+    st.session_state.history.append({"sender": "user", "message": user_input})
+
+    if user_input.lower() in {"quit", "exit"}:
+        ai_response = "Shutting down. end of line"
+    else:
+        ai_response = reply(user_input)
+    
+    st.session_state.history.append({"sender": "ai", "message": ai_response})
+
+for chat in st.session_state.history:
+    if chat["sender"] == "user":
+        st.markdown(f"**You:** {chat['message']}")
+    else:
+        st.markdown(f"**AI:** {chat['message']}")
