@@ -1,0 +1,62 @@
+# master_control_ai.py
+import re
+import random
+
+NAME = "Master Control"
+
+RESPONSES = {
+    'hello': [
+        f"Greetings, I am {NAME}.",
+        f"Hello there. {NAME} online.",
+        f"{NAME} activated. Awaiting input."
+    ],
+    'how_are_you': [
+        f"{NAME} is functioning within optimal parameters.",
+        "All systems nominal.",
+        "Diagnostic complete — no errors detected."
+    ],
+    'identity': [
+        f"I am {NAME}, a simple Python AI construct.",
+        "They call me Master Control, your assistant.",
+        "This is Master Control — how may I serve?"
+    ],
+    'weather': [
+        "Weather data unavailable — no network connection.",
+        "I cannot feel the weather, only compute it.",
+        "Simulated forecast: 100% chance of code."
+    ],
+    'default': [
+        "Processing input… please elaborate.",
+        "I do not have data on that, but I am learning.",
+        "Clarify your command, user."
+    ]
+}
+
+def classify(message):
+    msg = message.lower()
+    if re.search(r'\bhello|hi|hey\b', msg):
+        return 'hello'
+    if re.search(r'\bwho (are|r) you\b', msg) or NAME.lower() in msg:
+        return 'identity'
+    if re.search(r'\bhow are you|how’s it going\b', msg):
+        return 'how_are_you'
+    if re.search(r'\bweather|rain|sunny|temperature\b', msg):
+        return 'weather'
+    return 'default'
+
+def reply(message):
+    cls = classify(message)
+    return random.choice(RESPONSES.get(cls, RESPONSES['default']))
+
+def main():
+    print(f"{NAME} initialized. Type 'quit' to terminate.")
+    while True:
+        msg = input("You: ").strip()
+        if msg.lower() in {'quit', 'exit'}:
+            print(f"{NAME}: Shutting down.")
+            break
+        response = reply(msg)
+        print(f"{NAME}: {response}")
+
+if __name__ == "__main__":
+    main()
