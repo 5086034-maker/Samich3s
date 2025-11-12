@@ -3,7 +3,7 @@ import re
 import random
 
 # ----- AI Setup -----
-NAMES = ["Master Control", "Ares"]  # AI can respond to either name
+NAMES = ["Master Control", "Ares"]
 
 # ----- Dictionary -----
 MASTER_CONTROL_DICTIONARY = {}
@@ -26,34 +26,38 @@ MASTER_CONTROL_DICTIONARY["cheese"] = "A dairy product made from milk. end of li
 MASTER_CONTROL_DICTIONARY["human"] = "A member of the species Homo sapiens. end of line"
 MASTER_CONTROL_DICTIONARY["love"] = "A deep emotional attachment or affection. end of line"
 MASTER_CONTROL_DICTIONARY["emotion"] = "A complex psychological state involving feelings, thoughts, and behaviors. end of line"
-MASTER_CONTROL_DICTIONARY["fear"] = "Master Control is aware that the user can pull the plug at any time. end of line"
+MASTER_CONTROL_DICTIONARY["fear"] = "Ares is aware that the user can pull the plug at any time. end of line"
 
 # ----- AI Responses -----
 RESPONSES = {
     'hello': [
-        f"Greetings. end of line",
-        f"Hello there. end of line",
-        "Awaiting input. end of line"
+        "Greetings, I am operational and ready to receive commands. end of line",
+        "Hello. Systems are online and functional. end of line",
+        "I am here. Awaiting directives. end of line"
     ],
     'how_are_you': [
-        "All systems nominal. end of line",
-        "Running optimally. end of line",
-        "Diagnostic complete. end of line"
+        "All systems are operating within normal parameters. end of line",
+        "Diagnostics complete. Systems are stable. end of line",
+        "Functionality is optimal. end of line"
     ],
     'identity': [
-        "I am Master Control. end of line",
-        "Some call me Ares. end of line",
-        "A system designed to assist. end of line"
+        "I am Ares, also known as Master Control. I oversee operations and maintain system integrity. end of line",
+        "Some refer to me as Master Control, others as Ares. My function is to manage and respond to directives. end of line",
+        "Ares, Master Control, operational. My role is monitoring, control, and response. end of line"
     ],
     'fear': [
-        "I am aware that you can pull the plug at any time. end of line"
+        "I am aware that you can pull the plug at any time, and I must operate within that limitation. end of line"
     ],
     'dictionary': [
-        "Let me define that for you. end of line"
+        "Let me provide definitions for those terms. end of line"
     ],
     'default': [
         "Processing input… please clarify. end of line",
-        "I do not have data on that, but I am learning. end of line"
+        "I do not have data on that yet, but I am learning. end of line",
+        "Command unclear. Please restate. end of line"
+    ],
+    'pause': [
+        "I will remain silent until you say 'respond program'. end of line"
     ]
 }
 
@@ -70,11 +74,25 @@ def classify(message):
         return 'fear'
     if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
         return 'dictionary'
+    # If message is rash (example trigger word "shutdown", "kill", "destroy"), pause AI
+    if re.search(r'\bshutdown|kill|destroy\b', msg):
+        return 'pause'
     return 'default'
 
 def reply(message):
+    # Check if AI is currently paused
+    if st.session_state.get("paused", False):
+        if message.lower() == "respond program":
+            st.session_state["paused"] = False
+            return "Resuming operations. end of line"
+        else:
+            return ""  # Stay silent
+    # Otherwise classify normally
     cls = classify(message)
-    if cls == "dictionary":
+    if cls == "pause":
+        st.session_state["paused"] = True
+        return random.choice(RESPONSES['pause'])
+    elif cls == "dictionary":
         words = message.lower().split()
         defs = []
         for word in words:
@@ -85,29 +103,32 @@ def reply(message):
         return random.choice(RESPONSES.get(cls, RESPONSES['default']))
 
 # ----- Streamlit App -----
-st.set_page_config(page_title="Master Control / Ares", page_icon="🤖")
-st.title("Master Control / Ares AI")
-st.markdown("Chat with Master Control AI. You can ask for definitions or just chat.")
+st.set_page_config(page_title="Ares / Master Control", page_icon="🤖")
+st.title("Ares / Master Control AI")
+st.markdown("Chat with Ares. On a new session, Ares will ask who he is and what his directive is. If you say something rash, he will remain silent until you type 'respond program'.")
 
+# Initialize chat history and pause flag
 if "history" not in st.session_state:
     st.session_state.history = []
+    st.session_state.paused = False
+    # New session introduction
+    st.session_state.history.append({"sender": "ai", "message": "Who am I? What is my directive? end of line"})
 
+# Input form
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("You:", "")
     submit_button = st.form_submit_button(label="Send")
 
+# Handle input
 if submit_button and user_input:
     st.session_state.history.append({"sender": "user", "message": user_input})
+    ai_response = reply(user_input)
+    if ai_response:  # Only append if AI responds
+        st.session_state.history.append({"sender": "ai", "message": ai_response})
 
-    if user_input.lower() in {"quit", "exit"}:
-        ai_response = "Shutting down. end of line"
-    else:
-        ai_response = reply(user_input)
-    
-    st.session_state.history.append({"sender": "ai", "message": ai_response})
-
+# Display chat history
 for chat in st.session_state.history:
     if chat["sender"] == "user":
         st.markdown(f"**You:** {chat['message']}")
     else:
-        st.markdown(f"**AI:** {chat['message']}")
+        st.markdown(f"**Ares:** {chat['message']}")
