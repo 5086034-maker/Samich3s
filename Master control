@@ -1,36 +1,35 @@
-# master_control_gui.py
+import streamlit as st
 import re
 import random
-import tkinter as tk
-from tkinter import scrolledtext
 
+# ----- AI Setup -----
 NAME = "Master Control"
 
 RESPONSES = {
     'hello': [
-        f"Greetings, I am {NAME}.",
-        f"Hello there. {NAME} online.",
-        f"{NAME} activated. Awaiting input."
+        f"Greetings, I am {NAME}. end of line",
+        f"Hello there. {NAME} online. end of line",
+        f"{NAME} activated. Awaiting input. end of line"
     ],
     'how_are_you': [
-        f"{NAME} is functioning within optimal parameters.",
-        "All systems nominal.",
-        "Diagnostic complete — no errors detected."
+        f"{NAME} is functioning within optimal parameters. end of line",
+        "All systems nominal. end of line",
+        "Diagnostic complete — no errors detected. end of line"
     ],
     'identity': [
-        f"I am {NAME}, a simple Python AI construct.",
-        "They call me Master Control, your assistant.",
-        "This is Master Control — how may I serve?"
+        f"I am {NAME}, a simple Python AI construct. end of line",
+        "They call me Master Control, your assistant. end of line",
+        "This is Master Control — how may I serve? end of line"
     ],
     'weather': [
-        "Weather data unavailable — no network connection.",
-        "I cannot feel the weather, only compute it.",
-        "Simulated forecast: 100% chance of code."
+        "Weather data unavailable — no network connection. end of line",
+        "I cannot feel the weather, only compute it. end of line",
+        "Simulated forecast: 100% chance of code. end of line"
     ],
     'default': [
-        "Processing input… please elaborate.",
-        "I do not have data on that, but I am learning.",
-        "Clarify your command, user."
+        "Processing input… please elaborate. end of line",
+        "I do not have data on that, but I am learning. end of line",
+        "Clarify your command, user. end of line"
     ]
 }
 
@@ -48,39 +47,40 @@ def classify(message):
 
 def reply(message):
     cls = classify(message)
-    return random.choice(RESPONSES.get(cls, RESPONSES['default']))
+    # ensure "end of line" is appended if not already in the response
+    response = random.choice(RESPONSES.get(cls, RESPONSES['default']))
+    if not response.endswith("end of line"):
+        response += " end of line"
+    return response
 
-# ----- GUI -----
-def send_message(event=None):
-    user_input = entry.get().strip()
-    if not user_input:
-        return
-    chat_area.config(state='normal')
-    chat_area.insert(tk.END, f"You: {user_input}\n")
-    entry.delete(0, tk.END)
+# ----- Streamlit App -----
+st.set_page_config(page_title=NAME, page_icon="🤖")
+st.title(NAME)
+st.markdown("Chat with Master Control AI. Type your message and press Enter or click Send.")
+
+# Session state to hold chat history
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# Input form
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("You:", "")
+    submit_button = st.form_submit_button(label="Send")
+
+if submit_button and user_input:
+    st.session_state.history.append({"sender": "user", "message": user_input})
+
+    # AI reply
+    if user_input.lower() in {"quit", "exit"}:
+        ai_response = f"{NAME}: Shutting down. end of line"
+    else:
+        ai_response = reply(user_input)
     
-    if user_input.lower() in {'quit', 'exit'}:
-        chat_area.insert(tk.END, f"{NAME}: Shutting down.\n")
-        root.after(1000, root.destroy)
-        return
-    
-    response = reply(user_input)
-    chat_area.insert(tk.END, f"{NAME}: {response}\n")
-    chat_area.config(state='disabled')
-    chat_area.yview(tk.END)
+    st.session_state.history.append({"sender": "ai", "message": ai_response})
 
-# Tkinter window
-root = tk.Tk()
-root.title(NAME)
-
-chat_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, state='disabled', width=60, height=20)
-chat_area.pack(padx=10, pady=10)
-
-entry = tk.Entry(root, width=50)
-entry.pack(side=tk.LEFT, padx=(10,0), pady=(0,10))
-entry.bind("<Return>", send_message)
-
-send_btn = tk.Button(root, text="Send", command=send_message)
-send_btn.pack(side=tk.LEFT, padx=10, pady=(0,10))
-
-root.mainloop()
+# Display chat history
+for chat in st.session_state.history:
+    if chat["sender"] == "user":
+        st.markdown(f"**You:** {chat['message']}")
+    else:
+        st.markdown(f"**{NAME}:** {chat['message']}")3
