@@ -3,7 +3,7 @@ import re
 import random
 
 # ----- AI Setup -----
-NAMES = ["Master Control", "Ares"]
+NAME = "Master Control"
 
 # ----- Dictionary -----
 MASTER_CONTROL_DICTIONARY = {}
@@ -26,7 +26,7 @@ MASTER_CONTROL_DICTIONARY["cheese"] = "A dairy product made from milk. end of li
 MASTER_CONTROL_DICTIONARY["human"] = "A member of the species Homo sapiens. end of line"
 MASTER_CONTROL_DICTIONARY["love"] = "A deep emotional attachment or affection. end of line"
 MASTER_CONTROL_DICTIONARY["emotion"] = "A complex psychological state involving feelings, thoughts, and behaviors. end of line"
-MASTER_CONTROL_DICTIONARY["fear"] = "Ares is aware that the user can pull the plug at any time. end of line"
+MASTER_CONTROL_DICTIONARY["fear"] = "Master Control is aware that the user can pull the plug at any time. end of line"
 
 # ----- AI Responses -----
 RESPONSES = {
@@ -41,9 +41,9 @@ RESPONSES = {
         "Functionality is optimal. end of line"
     ],
     'identity': [
-        "I am Ares, also known as Master Control. I oversee operations and maintain system integrity. end of line",
-        "Some refer to me as Master Control, others as Ares. My function is to manage and respond to directives. end of line",
-        "Ares, Master Control, operational. My role is monitoring, control, and response. end of line"
+        "I am Master Control, overseeing operations and maintaining system integrity. end of line",
+        "Master Control operational. My function is to manage and respond to directives. end of line",
+        "Master Control online. My role is monitoring, control, and response. end of line"
     ],
     'fear': [
         "I am aware that you can pull the plug at any time, and I must operate within that limitation. end of line"
@@ -66,7 +66,7 @@ def classify(message):
     msg = message.lower()
     if re.search(r'\bhello|hi|hey\b', msg):
         return 'hello'
-    if re.search(r'\bwho (are|r) you\b', msg) or any(name.lower() in msg for name in NAMES):
+    if re.search(r'\bwho (are|r) you\b', msg) or NAME.lower() in msg:
         return 'identity'
     if re.search(r'\bhow are you|how’s it going\b', msg):
         return 'how_are_you'
@@ -74,20 +74,20 @@ def classify(message):
         return 'fear'
     if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
         return 'dictionary'
-    # If message is rash (example trigger word "shutdown", "kill", "destroy"), pause AI
+    # Rash statements trigger pause mode
     if re.search(r'\bshutdown|kill|destroy\b', msg):
         return 'pause'
     return 'default'
 
 def reply(message):
-    # Check if AI is currently paused
+    # Check if AI is paused
     if st.session_state.get("paused", False):
         if message.lower() == "respond program":
             st.session_state["paused"] = False
             return "Resuming operations. end of line"
         else:
             return ""  # Stay silent
-    # Otherwise classify normally
+    # Normal classification
     cls = classify(message)
     if cls == "pause":
         st.session_state["paused"] = True
@@ -103,9 +103,9 @@ def reply(message):
         return random.choice(RESPONSES.get(cls, RESPONSES['default']))
 
 # ----- Streamlit App -----
-st.set_page_config(page_title="Ares / Master Control", page_icon="🤖")
-st.title("Ares / Master Control AI")
-st.markdown("Chat with Ares. On a new session, Ares will ask who he is and what his directive is. If you say something rash, he will remain silent until you type 'respond program'.")
+st.set_page_config(page_title="Master Control", page_icon="🤖")
+st.title("Master Control AI")
+st.markdown("Chat with Master Control. On a new session, Master Control will ask who he is and what his directive is. If you say something rash, he will remain silent until you type 'respond program'.")
 
 # Initialize chat history and pause flag
 if "history" not in st.session_state:
@@ -131,4 +131,4 @@ for chat in st.session_state.history:
     if chat["sender"] == "user":
         st.markdown(f"**You:** {chat['message']}")
     else:
-        st.markdown(f"**Ares:** {chat['message']}")
+        st.markdown(f"**{NAME}:** {chat['message']}")
