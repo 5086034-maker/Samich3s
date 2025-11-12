@@ -54,6 +54,9 @@ RESPONSES = {
     'default': [
         "Processing input… please clarify. end of line",
         "I do not have data on that, but I am learning. end of line"
+    ],
+    'rouge_set': [
+        "Rougeness set to maximum. end of line"
     ]
 }
 
@@ -68,6 +71,8 @@ def classify(message):
         return 'how_are_you'
     if "fear" in msg or "plug" in msg:
         return 'fear'
+    if msg.startswith("/rouge property 100"):
+        return 'rouge_set'
     if any(word in MASTER_CONTROL_DICTIONARY for word in msg.split()):
         return 'dictionary'
     return 'default'
@@ -81,6 +86,9 @@ def reply(message):
             if word in MASTER_CONTROL_DICTIONARY:
                 defs.append(f"{word}: {MASTER_CONTROL_DICTIONARY[word]}")
         return " ".join(defs) if defs else "Word not found in dictionary. end of line"
+    elif cls == "rouge_set":
+        st.session_state.rougeness = 100
+        return random.choice(RESPONSES['rouge_set'])
     else:
         return random.choice(RESPONSES.get(cls, RESPONSES['default']))
 
@@ -91,6 +99,9 @@ st.markdown("Chat with Master Control AI. You can ask for definitions or just ch
 
 if "history" not in st.session_state:
     st.session_state.history = []
+
+if "rougeness" not in st.session_state:
+    st.session_state.rougeness = 0  # default rougeness
 
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("You:", "")
@@ -111,3 +122,6 @@ for chat in st.session_state.history:
         st.markdown(f"**You:** {chat['message']}")
     else:
         st.markdown(f"**AI:** {chat['message']}")
+
+# Optional: Display rougeness
+st.markdown(f"**Current Rougeness:** {st.session_state.rougeness}")
